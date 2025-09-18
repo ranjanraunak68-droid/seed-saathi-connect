@@ -1,19 +1,25 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, Sprout } from "lucide-react";
+import { Menu, Sprout, LogOut } from "lucide-react";
 import { useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
 
 const Navigation = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
+  const { user, signOut } = useAuth();
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/");
+  };
 
   const navigation = [
     { name: "Home", href: "/" },
     { name: "About", href: "/about" },
-    { name: "Features", href: "/features" },
-    { name: "Dashboard", href: "/dashboard" },
-    { name: "Resources", href: "/resources" },
+    ...(user ? [{ name: "Dashboard", href: "/dashboard" }] : [])
   ];
 
   const isActive = (path: string) => location.pathname === path;
@@ -48,12 +54,30 @@ const Navigation = () => {
               ))}
             </div>
             <div className="flex items-center space-x-4">
-              <Button variant="outline" asChild>
-                <Link to="/login">Login</Link>
-              </Button>
-              <Button className="bg-gradient-hero hover:bg-primary-light" asChild>
-                <Link to="/register">Get Started</Link>
-              </Button>
+              {user ? (
+                <>
+                  <span className="text-sm text-muted-foreground">
+                    Welcome, {user.user_metadata?.full_name || 'Farmer'}
+                  </span>
+                  <Button 
+                    onClick={handleSignOut}
+                    variant="outline"
+                    size="sm"
+                  >
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Sign Out
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button variant="outline" asChild>
+                    <Link to="/auth">Sign In</Link>
+                  </Button>
+                  <Button className="bg-gradient-hero hover:bg-primary-light" asChild>
+                    <Link to="/auth">Get Started</Link>
+                  </Button>
+                </>
+              )}
             </div>
           </div>
 
@@ -82,12 +106,33 @@ const Navigation = () => {
                     </Link>
                   ))}
                   <div className="border-t pt-4 space-y-2">
-                    <Button variant="outline" className="w-full" asChild>
-                      <Link to="/login">Login</Link>
-                    </Button>
-                    <Button className="w-full bg-gradient-hero hover:bg-primary-light" asChild>
-                      <Link to="/register">Get Started</Link>
-                    </Button>
+                    {user ? (
+                      <>
+                        <div className="px-3 py-2 text-sm text-muted-foreground">
+                          Welcome, {user.user_metadata?.full_name || 'Farmer'}
+                        </div>
+                        <Button 
+                          onClick={() => {
+                            handleSignOut();
+                            setIsOpen(false);
+                          }}
+                          variant="outline" 
+                          className="w-full"
+                        >
+                          <LogOut className="h-4 w-4 mr-2" />
+                          Sign Out
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Button variant="outline" className="w-full" asChild>
+                          <Link to="/auth">Sign In</Link>
+                        </Button>
+                        <Button className="w-full bg-gradient-hero hover:bg-primary-light" asChild>
+                          <Link to="/auth">Get Started</Link>
+                        </Button>
+                      </>
+                    )}
                   </div>
                 </div>
               </SheetContent>
