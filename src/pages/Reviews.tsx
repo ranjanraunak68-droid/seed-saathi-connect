@@ -73,14 +73,32 @@ const Reviews = () => {
       const { data, error } = await supabase
         .from('reviews')
         .select(`
-          *,
-          seed_varieties(variety_name, crop_type, developed_by),
+          id,
+          rating,
+          yield_achieved_kg_per_hectare,
+          germination_success_rate,
+          review_text,
+          season_type,
+          location_state,
+          location_district,
+          sowing_date,
+          harvest_date,
+          is_verified,
+          created_at,
+          seed_varieties!inner(variety_name, crop_type, developed_by),
           profiles(full_name)
         `)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setReviews(data || []);
+      
+      // Transform the data to handle potential null profiles
+      const transformedData = data?.map(item => ({
+        ...item,
+        profiles: item.profiles || { full_name: 'Anonymous' }
+      })) || [];
+      
+      setReviews(transformedData as Review[]);
     } catch (error: any) {
       console.error('Error fetching reviews:', error);
       toast({
