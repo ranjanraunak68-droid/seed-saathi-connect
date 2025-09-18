@@ -22,6 +22,8 @@ export default {
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
+          light: "hsl(var(--primary-light))",
+          glow: "hsl(var(--primary-glow))",
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
@@ -62,6 +64,19 @@ export default {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+      },
+      backgroundImage: {
+        "gradient-hero": "var(--gradient-hero)",
+        "gradient-feature": "var(--gradient-feature)",
+        "gradient-earth": "var(--gradient-earth)",
+      },
+      boxShadow: {
+        natural: "var(--shadow-natural)",
+        glow: "var(--shadow-glow)",
+        card: "var(--shadow-card)",
+      },
+      transitionTimingFunction: {
+        organic: "var(--transition-organic)",
       },
       keyframes: {
         "accordion-down": {
