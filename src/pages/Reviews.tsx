@@ -19,21 +19,17 @@ interface Review {
   yield_achieved_kg_per_hectare: number | null;
   germination_success_rate: number | null;
   review_text: string | null;
-  season_type: "kharif" | "rabi" | "zaid";
+  season_type: string;
   location_state: string;
   location_district: string;
   sowing_date: string | null;
   harvest_date: string | null;
   is_verified: boolean;
   created_at: string;
-  seed_varieties: {
-    variety_name: string;
-    crop_type: string;
-    developed_by: string;
-  } | null;
-  profiles: {
-    full_name: string;
-  } | null;
+  seed_variety_name?: string;
+  seed_crop_type?: string;
+  seed_developed_by?: string;
+  farmer_name?: string;
 }
 
 interface SeedVariety {
@@ -70,7 +66,8 @@ const Reviews = () => {
 
   const fetchReviews = async () => {
     try {
-      const { data, error } = await supabase
+      // Get reviews with seed variety info and farmer names
+      const { data: reviewsData, error: reviewsError } = await supabase
         .from('reviews')
         .select(`
           id,
@@ -85,20 +82,42 @@ const Reviews = () => {
           harvest_date,
           is_verified,
           created_at,
-          seed_varieties!inner(variety_name, crop_type, developed_by),
-          profiles(full_name)
+          seed_variety_id,
+          user_id
         `)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      
-      // Transform the data to handle potential null profiles
-      const transformedData = data?.map(item => ({
-        ...item,
-        profiles: item.profiles || { full_name: 'Anonymous' }
-      })) || [];
-      
-      setReviews(transformedData as Review[]);
+      if (reviewsError) throw reviewsError;
+
+      // Get seed varieties
+      const { data: seedsData, error: seedsError } = await supabase
+        .from('seed_varieties')
+        .select('id, variety_name, crop_type, developed_by');
+
+      if (seedsError) throw seedsError;
+
+      // Get profiles
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('user_id, full_name');
+
+      if (profilesError) throw profilesError;
+
+      // Combine the data
+      const combinedReviews = reviewsData?.map(review => {
+        const seedVariety = seedsData?.find(seed => seed.id === review.seed_variety_id);
+        const profile = profilesData?.find(p => p.user_id === review.user_id);
+        
+        return {
+          ...review,
+          seed_variety_name: seedVariety?.variety_name || 'Unknown Variety',
+          seed_crop_type: seedVariety?.crop_type || 'Unknown',
+          seed_developed_by: seedVariety?.developed_by || 'Unknown',
+          farmer_name: profile?.full_name || 'Anonymous'
+        };
+      }) || [];
+
+      setReviews(combinedReviews);
     } catch (error: any) {
       console.error('Error fetching reviews:', error);
       toast({
@@ -143,13 +162,13 @@ const Reviews = () => {
         rating: newReview.rating,
         yield_achieved_kg_per_hectare: newReview.yield_achieved_kg_per_hectare ? parseFloat(newReview.yield_achieved_kg_per_hectare) : null,
         germination_success_rate: newReview.germination_success_rate ? parseFloat(newReview.germination_success_rate) : null,
-        review_text: newReview.review_text,
+        review_text: newReview.review_text || null,
         season_type: newReview.season_type as "kharif" | "rabi" | "zaid",
         location_state: newReview.location_state,
         location_district: newReview.location_district,
         sowing_date: newReview.sowing_date || null,
         harvest_date: newReview.harvest_date || null
-      });
+      } as any);
 
       if (error) throw error;
 
@@ -384,10 +403,10 @@ const Reviews = () => {
                 <div className="flex items-start justify-between mb-4">
                   <div>
                     <h3 className="font-semibold text-lg text-foreground">
-                      {review.seed_varieties.variety_name}
+                      {review.seed_variety_name}
                     </h3>
                     <p className="text-sm text-muted-foreground">
-                      {review.seed_varieties.crop_type} • {review.seed_varieties.developed_by}
+                      {review.seed_crop_type} • {review.seed_developed_by}
                     </p>
                   </div>
                   <div className="flex items-center space-x-2">
@@ -421,7 +440,7 @@ const Reviews = () => {
                 )}
 
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>By {review.profiles?.full_name || 'Anonymous'}</span>
+                  <span>By {review.farmer_name}</span>
                   <span>{format(new Date(review.created_at), 'MMM dd, yyyy')}</span>
                 </div>
               </CardContent>
