@@ -19,6 +19,8 @@ const Navigation = () => {
   const navigation = [
     { name: "Home", href: "/" },
     { name: "About", href: "/about" },
+    { name: "Seed Catalog", href: "/catalog" },
+    { name: "Reviews", href: "/reviews" },
     ...(user ? [{ name: "Dashboard", href: "/dashboard" }] : [])
   ];
 
